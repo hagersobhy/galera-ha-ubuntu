@@ -1,0 +1,5 @@
+[galera_nodes]
+#define in /etc/hosts ip and hostname
+galera-node1
+galera-node2
+galera-node3

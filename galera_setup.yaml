@@ -1,0 +1,45 @@
+---
+- name: Configure MariaDB Galera Cluster
+  hosts: galera_nodes
+  become: yes
+  vars:
+    galera_cluster_name: "my_galera_cluster"
+    galera_cluster_address: "gcomm://192.168.254.101,192.168.254.102,192.168.254.103"
+    galera_nodes:
+      - { ip: "192.168.254.101", name: "galera-node1" }
+      - { ip: "192.168.254.102", name: "galera-node2" }
+      - { ip: "192.168.254.103", name: "galera-node3" }
+
+  tasks:
+    - name: Install MariaDB and Galera
+      apt:
+        name:
+          - mariadb-server
+          - galera-4
+        state: present
+        update_cache: yes
+
+    - name: Create Galera configuration file
+      template:
+        src: galera.cnf.j2
+        dest: /etc/mysql/mariadb.conf.d/50-server.cnf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Stop MariaDB service
+      service:
+        name: mariadb
+        state: stopped
+
+    - name: Start MariaDB service on the first node to bootstrap the cluster
+      service:
+        name: mariadb
+        state: started
+      when: inventory_hostname == "galera-node1"
+
+    - name: Start MariaDB service on the remaining nodes
+      service:
+        name: mariadb
+        state: started
+      when: inventory_hostname != "galera-node1"
